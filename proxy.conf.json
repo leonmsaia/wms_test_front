@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "http://backend-nginx",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}
