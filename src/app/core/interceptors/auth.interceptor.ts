@@ -4,7 +4,7 @@ import { inject } from '@angular/core';
 import { TokenService } from '../services/token.service';
 
 /**
- * Appends Bearer token to outgoing requests when available.
+ * Attaches Bearer token to outgoing HTTP requests when available.
  *
  * @author  Leon. M. Saia
  * @since   2025-08-14

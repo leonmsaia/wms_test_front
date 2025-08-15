@@ -4,16 +4,15 @@ import { inject } from '@angular/core';
 import { TokenService } from '../services/token.service';
 
 /**
- * Blocks routes if no auth token present.
+ * Route guard that requires authentication.
  *
  * @author  Leon. M. Saia
  * @since   2025-08-14
  */
 export const authGuard: CanActivateFn = () => {
-  const token = inject(TokenService).get();
-  if (!token) {
-    inject(Router).navigate(['/login']);
-    return false;
-  }
-  return true;
+  const token = inject(TokenService);
+  const router = inject(Router);
+  if (token.isAuthenticated) return true;
+  router.navigateByUrl('/login');
+  return false;
 };

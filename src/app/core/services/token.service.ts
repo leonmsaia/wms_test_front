@@ -1,16 +1,26 @@
 // src/app/core/services/token.service.ts
 import { Injectable } from '@angular/core';
 
+const KEY = 'access_token';
+
 /**
- * Simple token storage (localStorage) for Bearer tokens.
+ * Stores and retrieves the API access token.
  *
  * @author  Leon. M. Saia
  * @since   2025-08-14
  */
 @Injectable({ providedIn: 'root' })
 export class TokenService {
-  private key = 'access_token';
-  get(): string | null { return localStorage.getItem(this.key); }
-  set(token: string) { localStorage.setItem(this.key, token); }
-  clear() { localStorage.removeItem(this.key); }
+  get(): string | null {
+    return localStorage.getItem(KEY);
+  }
+  set(token: string): void {
+    localStorage.setItem(KEY, token);
+  }
+  clear(): void {
+    localStorage.removeItem(KEY);
+  }
+  get isAuthenticated(): boolean {
+    return !!this.get();
+  }
 }
