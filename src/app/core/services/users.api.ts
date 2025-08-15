@@ -1,40 +1,63 @@
 // src/app/core/services/users.api.ts
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { User } from '../models/user.model';
+
+export type Rol = 'Admin' | 'User';
+
+export interface User {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+  rol: Rol;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Paginated<T> {
+  data: T[];
+  meta?: {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+  };
+}
 
 /**
- * Users API client matching Laravel endpoints with filters & pagination.
+ * Users API wrapper (Laravel endpoints)
  *
  * Endpoints:
  *  - GET    /api/usuarios?role=&q=&page=&per_page=
  *  - POST   /api/usuarios
- *  - PUT    /api/usuarios/{id}
- *  - DELETE /api/usuarios/{id}
+ *  - PUT    /api/usuarios/:id
+ *  - DELETE /api/usuarios/:id
  *
  * @author  Leon. M. Saia
  * @since   2025-08-14
  */
 @Injectable({ providedIn: 'root' })
 export class UsersApi {
-  private http = inject(HttpClient);
-  private base = environment.apiBase + '/usuarios';
+  private readonly base = `${environment.apiBaseUrl}/usuarios`;
 
-  list(opts: { role?: string; q?: string; page?: number; per_page?: number }) {
+  constructor(private http: HttpClient) {}
+
+  list(opts: { role?: Rol; q?: string; page?: number; per_page?: number } = {}) {
     let params = new HttpParams();
     if (opts.role) params = params.set('role', opts.role);
     if (opts.q) params = params.set('q', opts.q);
     if (opts.page) params = params.set('page', String(opts.page));
     if (opts.per_page) params = params.set('per_page', String(opts.per_page));
-    return this.http.get<{ data: User[]; meta?: any }>(`${this.base}`, { params });
+
+    return this.http.get<Paginated<User>>(this.base, { params });
   }
 
-  create(payload: Partial<User> & { password?: string }) {
-    return this.http.post<User>(`${this.base}`, payload);
+  create(payload: Omit<User, 'id' | 'created_at' | 'updated_at'> & { password?: string }) {
+    return this.http.post<User>(this.base, payload);
   }
 
-  update(id: number, payload: Partial<User> & { password?: string }) {
+  update(id: number, payload: Partial<Omit<User, 'id'>>) {
     return this.http.put<User>(`${this.base}/${id}`, payload);
   }
 
