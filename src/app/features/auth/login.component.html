@@ -1,0 +1,40 @@
+<div class="login-wrap">
+  <mat-card class="mat-elevation-z4 login-card">
+    <h1 class="title">Ingresar</h1>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form" [class.disabled]="busy()">
+
+      <mat-form-field appearance="fill">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" placeholder="email@example.com" autocomplete="username" />
+        <mat-error *ngIf="form.controls.email.touched && form.controls.email.invalid">
+          {{ emailError() }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="fill">
+        <mat-label>Contraseña</mat-label>
+        <input matInput [type]="hidePwd() ? 'password' : 'text'" formControlName="password" placeholder="********" autocomplete="current-password" />
+        <button type="button" mat-icon-button matSuffix (click)="togglePwd()" [attr.aria-label]="hidePwd() ? 'Mostrar contraseña' : 'Ocultar contraseña'">
+          <mat-icon>{{ hidePwd() ? 'visibility' : 'visibility_off' }}</mat-icon>
+        </button>
+        <mat-error *ngIf="form.controls.password.touched && form.controls.password.invalid">
+          Password is required.
+        </mat-error>
+      </mat-form-field>
+
+      <div class="error" *ngIf="error()">
+        <mat-icon color="warn">error</mat-icon>
+        <span>{{ error() }}</span>
+      </div>
+
+      <button mat-raised-button color="primary" class="submit"
+              type="submit" [disabled]="form.invalid || busy()">
+        <ng-container *ngIf="!busy(); else loadingTpl">Ingresar</ng-container>
+      </button>
+      <ng-template #loadingTpl>
+        <mat-progress-spinner mode="indeterminate" diameter="20"></mat-progress-spinner>
+      </ng-template>
+    </form>
+  </mat-card>
+</div>

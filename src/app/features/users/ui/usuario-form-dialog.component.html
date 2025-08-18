@@ -1,0 +1,8 @@
+<!-- src/app/features/users/ui/usuario-form-dialog.component.html -->
+<h2 mat-dialog-title>{{ data ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+<div mat-dialog-content>
+  <app-usuario-formulario [user]="data" (saved)="close()"></app-usuario-formulario>
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Cerrar</button>
+</div>

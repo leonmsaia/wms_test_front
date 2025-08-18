@@ -2,8 +2,26 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, catchError, of, switchMap, tap } from 'rxjs';
 import { AuthApi } from '@app/core/services/auth.api';
-// Update the path below to the correct location of auth.models.ts
 import { AuthUser, LoginRequest, RegisterRequest } from '../../../core/models/auth.model';
+
+/**
+* AuthStore manages authentication state including user info, token, and status.
+* It provides methods to login, register, fetch user info, and logout.
+* It uses an internal BehaviorSubject to track state changes and expose them as an observable.
+* Actions are dispatched to update the state based on API responses.
+* It handles errors gracefully, resetting the token and user on failure.
+* It also persists the token in localStorage for session management.
+* State structure:
+* {
+*  user: AuthUser | null; // Current authenticated user
+*  token: string | null; // JWT token for authenticated requests
+*  status: 'idle' | 'loading' | 'ready' | 'error'; // Current loading status
+*  error: string | null; // Error message if any
+* }
+*
+* @author  Leon. M. Saia
+* @since   2025-08-14
+*/
 
 export interface AuthState {
   user: AuthUser | null;
@@ -18,7 +36,6 @@ const initialState: AuthState = {
   status: 'idle',
   error: null,
 };
-
 
 export const authLogin    = (payload: LoginRequest)    => ({ type: '[Auth] Login'    as const, payload });
 export const authRegister = (payload: RegisterRequest) => ({ type: '[Auth] Register' as const, payload });
