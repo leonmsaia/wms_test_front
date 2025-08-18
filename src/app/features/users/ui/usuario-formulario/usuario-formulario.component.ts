@@ -7,7 +7,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Store } from 'mini-rx-store';
 import { UsersActions } from '../../store/users.actions';
-import { User } from '../../../../core/models/user.model';
+// import { User } from '../../../../core/models/user.model';
+import { User } from '../../../../core/services/users.api';
 
 /**
  * Reactive form used for add/edit users with validations.
