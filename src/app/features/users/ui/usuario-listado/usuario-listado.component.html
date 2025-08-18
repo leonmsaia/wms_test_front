@@ -1,0 +1,133 @@
+<!-- src/app/features/users/ui/usuario-listado/usuario-listado.component.html -->
+<mat-toolbar color="primary" class="toolbar mat-elevation-z2">
+  <div class="container row">
+    <span class="mat-headline-6">Usuarios</span>
+  </div>
+</mat-toolbar>
+
+<div class="container page">
+  <ng-container *ngIf="vm$ | async as vm">
+
+    <mat-card class="mat-elevation-z1">
+      <mat-card-content>
+        <div class="row" style="gap:16px;">
+          <button mat-stroked-button color="warn" (click)="onLogout()">
+            <mat-icon>logout</mat-icon>
+            Cerrar sesión
+          </button>
+          <button mat-raised-button color="accent" (click)="onCreate()">
+            <mat-icon>person_add</mat-icon>
+            Nuevo usuario
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="mat-elevation-z1">
+      <mat-card-content>
+        <div class="row" style="gap:16px;">
+          <mat-form-field appearance="fill" style="width: 260px;">
+            <mat-label>Rol</mat-label>
+            <mat-select [ngModel]="vm.filters.role || ''" (ngModelChange)="onRoleChange($event)">
+              <mat-option [value]="''">Todos</mat-option>
+              <mat-option value="Admin">Admin</mat-option>
+              <mat-option value="User">User</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="spacer">
+            <mat-label>Buscar por nombre o apellido</mat-label>
+            <input matInput [ngModel]="vm.filters.q || ''" (ngModelChange)="onSearchInput($event)" />
+            <button mat-icon-button matSuffix aria-label="Buscar" (click)="forceSearch()" matTooltip="Buscar">
+              <mat-icon>search</mat-icon>
+            </button>
+          </mat-form-field>
+
+          <mat-chip *ngIf="vm.total" color="primary" selected>Total: {{ vm.total }}</mat-chip>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <app-loading [show]="vm.loading" message="Cargando usuarios..."></app-loading>
+
+    <mat-card *ngIf="!vm.loading && vm.error" class="mat-elevation-z1" appearance="outlined">
+      <mat-card-content class="error-card">
+        <mat-icon>error</mat-icon>
+        {{ vm.error }}
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="mat-elevation-z1" *ngIf="!vm.loading && !vm.error">
+      <mat-card-content>
+        <table mat-table [dataSource]="vm.items || []" class="full-width">
+
+          <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef>ID</th>
+            <td mat-cell *matCellDef="let u">{{ u.id }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="nombre">
+            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <td mat-cell *matCellDef="let u">{{ u.nombre }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="apellido">
+            <th mat-header-cell *matHeaderCellDef>Apellido</th>
+            <td mat-cell *matCellDef="let u">{{ u.apellido }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef>Email</th>
+            <td mat-cell *matCellDef="let u">{{ u.email }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="rol">
+            <th mat-header-cell *matHeaderCellDef>Rol</th>
+            <td mat-cell *matCellDef="let u">
+              <span [matBadge]="u.rol === 'Admin' ? 'A' : 'U'"
+                    matBadgeOverlap="false"
+                    [matBadgeColor]="u.rol === 'Admin' ? 'warn' : 'primary'">
+                {{ u.rol }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="acciones">
+            <th mat-header-cell *matHeaderCellDef class="w-acciones">Acciones</th>
+            <td mat-cell *matCellDef="let u" class="acciones">
+              <button mat-icon-button color="primary" (click)="onEdit(u)" matTooltip="Editar">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="onRemove(u)" matTooltip="Eliminar">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="cols"></tr>
+          <tr mat-row *matRowDef="let row; columns: cols;"></tr>
+
+          <tr class="empty" *ngIf="!vm.items?.length">
+            <td colspan="6">
+              <div class="empty-state">
+                <mat-icon>group</mat-icon>
+                No hay usuarios para los filtros aplicados.
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <mat-divider class="my-16"></mat-divider>
+
+        <mat-paginator
+          *ngIf="vm.total && (vm.lastPage ?? 1) > 1"
+          [length]="vm.total || 0"
+          [pageIndex]="(vm.page || 1) - 1"
+          [pageSize]="vm.perPage || 10"
+          [pageSizeOptions]="[vm.perPage || 10]"
+          (page)="onPage($event)">
+        </mat-paginator>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+</div>
