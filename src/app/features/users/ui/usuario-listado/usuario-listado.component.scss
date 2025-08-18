@@ -1,0 +1,16 @@
+/* src/app/features/users/ui/usuario-listado/usuario-listado.component.scss */
+.toolbar { position: sticky; top: 0; z-index: 10; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+.page { display: grid; gap: 16px; padding: 16px 0; }
+.row { display:flex; align-items:center; }
+.spacer { flex: 1; }
+
+.full-width { width: 100%; }
+.w-acciones { width: 120px; }
+.acciones { display:flex; gap:6px; }
+.my-16 { margin: 16px 0; }
+
+.error-card { color:#b00020; display:flex; align-items:center; gap:8px; }
+
+.empty { text-align:center; color:#666; height:56px; }
+.empty-state { display:flex; align-items:center; gap:8px; justify-content:center; padding:24px 0; }

@@ -1,8 +1,12 @@
 // src/app/features/users/ui/usuario-listado/usuario-listado.component.ts
-import { Component, ChangeDetectionStrategy, inject, OnInit, Inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AsyncPipe, NgIf } from '@angular/common';
+import { AsyncPipe, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
@@ -10,7 +14,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialog, MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatDialog } from '@angular/material/dialog';
 
 import { debounceTime, distinctUntilChanged, map, Subject, combineLatest, Observable } from 'rxjs';
 import { Store } from 'mini-rx-store';
@@ -22,127 +29,45 @@ import {
   selectItems, selectLoading, selectError,
   selectPage, selectPerPage, selectTotal, selectFilters, selectLastPage
 } from '../../store/users.selectors';
-
 import { AuthStore, authLogout } from '@app/features/auth/store/auth.store';
-import { UsuarioFormularioComponent } from '../usuario-formulario/usuario-formulario.component';
+import { UsuarioFormDialogComponent } from '../usuario-form-dialog.component';
 
+/**
+ * Users listing container component.
+ *
+ * Displays the users table with pagination, filters and item actions (create, edit, delete).
+ * It orchestrates the UI state from the MiniRx store and triggers effects through actions.
+ * Visual presentation follows Angular Material guidelines (toolbar, cards, table, paginator).
+ *
+ * Key responsibilities:
+ * - Load initial collection and react to pagination / filter changes
+ * - Open the create/edit dialog and forward the resulting actions
+ * - Dispatch delete action after user confirmation (browser confirm for now)
+ * - Trigger logout and route to login
+ *
+ * @author  Leon. M. Saia
+ * @since   2025-08-14
+ */
 @Component({
   selector: 'app-usuario-listado',
   standalone: true,
   imports: [
-    NgIf, AsyncPipe, FormsModule,
-    MatTableModule, MatPaginatorModule, MatFormFieldModule, MatSelectModule,
-    MatInputModule, MatButtonModule, MatIconModule, MatDialogModule,
+    // Angular
+    NgIf, NgFor, AsyncPipe, FormsModule,
+    // Material
+    MatToolbarModule, MatCardModule, MatDividerModule,
+    MatTableModule, MatPaginatorModule,
+    MatFormFieldModule, MatSelectModule, MatInputModule,
+    MatButtonModule, MatIconModule, MatTooltipModule,
+    MatChipsModule, MatBadgeModule,
+    // Dialog host (opened from here)
+    // Nota: el dialogo es standalone y se importa en runtime via MatDialog.open()
+    // no es necesario importarlo aquí.
+    // Shared
     LoadingComponent,
   ],
-  template: `
-<section class="page">
-  <header class="header">
-  <h1>Usuarios</h1>
-  <span class="spacer"></span>
-  <button mat-stroked-button color="warn" (click)="onLogout()">
-    <mat-icon>logout</mat-icon>
-    Cerrar sesión
-  </button>
-  <button mat-flat-button color="primary" (click)="onCreate()">
-    <mat-icon>person_add</mat-icon>
-    Nuevo usuario
-  </button>
-</header>
-
-  <ng-container *ngIf="vm$ | async as vm">
-    <div class="toolbar">
-      <mat-form-field appearance="outline">
-        <mat-label>Rol</mat-label>
-        <mat-select [ngModel]="vm.filters.role || ''" (ngModelChange)="onRoleChange($event)">
-          <mat-option [value]="''">Todos</mat-option>
-          <mat-option [value]="'Admin'">Admin</mat-option>
-          <mat-option [value]="'User'">User</mat-option>
-        </mat-select>
-      </mat-form-field>
-
-      <mat-form-field class="grow" appearance="outline">
-        <mat-label>Buscar por nombre o apellido</mat-label>
-        <input matInput [ngModel]="vm.filters.q || ''" (ngModelChange)="onSearchInput($event)" />
-        <button mat-icon-button matSuffix aria-label="Buscar" (click)="forceSearch()">
-          <mat-icon>search</mat-icon>
-        </button>
-      </mat-form-field>
-    </div>
-
-    <app-loading [show]="vm.loading" message="Cargando usuarios..."></app-loading>
-    <div class="error" *ngIf="!vm.loading && vm.error">
-      {{ vm.error }}
-    </div>
-
-    <table mat-table [dataSource]="vm.items || []" class="mat-elevation-z1" *ngIf="!vm.loading && !vm.error">
-      <ng-container matColumnDef="id">
-        <th mat-header-cell *matHeaderCellDef>ID</th>
-        <td mat-cell *matCellDef="let u">{{ u.id }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="nombre">
-        <th mat-header-cell *matHeaderCellDef>Nombre</th>
-        <td mat-cell *matCellDef="let u">{{ u.nombre }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="apellido">
-        <th mat-header-cell *matHeaderCellDef>Apellido</th>
-        <td mat-cell *matCellDef="let u">{{ u.apellido }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="email">
-        <th mat-header-cell *matHeaderCellDef>Email</th>
-        <td mat-cell *matCellDef="let u">{{ u.email }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="rol">
-        <th mat-header-cell *matHeaderCellDef>Rol</th>
-        <td mat-cell *matCellDef="let u">{{ u.rol }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="acciones">
-        <th mat-header-cell *matHeaderCellDef class="w-acciones">Acciones</th>
-        <td mat-cell *matCellDef="let u" class="acciones">
-          <button mat-icon-button color="primary" (click)="onEdit(u)" aria-label="Editar">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" (click)="onRemove(u)" aria-label="Eliminar">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="cols"></tr>
-      <tr mat-row *matRowDef="let row; columns: cols;"></tr>
-
-      <tr class="empty" *ngIf="!vm.items?.length">
-        <td colspan="6">No hay usuarios para los filtros aplicados.</td>
-      </tr>
-    </table>
-
-    <mat-paginator
-      *ngIf="vm.total && (vm.lastPage ?? 1) > 1"
-      [length]="vm.total || 0"
-      [pageIndex]="(vm.page || 1) - 1"
-      [pageSize]="vm.perPage || 10"
-      [pageSizeOptions]="[vm.perPage || 10]"
-      (page)="onPage($event)">
-    </mat-paginator>
-  </ng-container>
-</section>
-`,
-  styles: [`
-    .page { padding: 16px; display: grid; gap: 12px; }
-    .header { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-    .toolbar { display:flex; gap:12px; align-items:center; }
-    .grow { flex:1; min-width: 260px; }
-    table { width:100%; }
-    .w-acciones { width: 120px; }
-    .acciones { display:flex; gap:4px; }
-    .error { background:#fee; color:#900; padding:.5rem; border:1px solid #f99; border-radius:6px; }
-    .empty { text-align:center; color:#666; height:56px; }
-  `],
+  templateUrl: './usuario-listado.component.html',
+  styleUrls: ['./usuario-listado.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UsuarioListadoComponent implements OnInit {
@@ -151,10 +76,13 @@ export class UsuarioListadoComponent implements OnInit {
   private router = inject(Router);
   private authStore = inject(AuthStore);
 
+  /** Displayed columns for the Material table. */
   cols = ['id', 'nombre', 'apellido', 'email', 'rol', 'acciones'] as const;
 
+  /** Debounced input stream for full-text search. */
   private qInput$ = new Subject<string>();
 
+  /** ViewModel stream aggregated from store selectors. */
   vm$!: Observable<{
     items: User[];
     loading: boolean;
@@ -166,6 +94,10 @@ export class UsuarioListadoComponent implements OnInit {
     lastPage: number;
   }>;
 
+  /**
+   * Initialize the VM stream, trigger initial collection load,
+   * and wire up the debounced search pipeline.
+   */
   ngOnInit(): void {
     this.vm$ = combineLatest([
       this.store.select(selectItems),
@@ -182,7 +114,10 @@ export class UsuarioListadoComponent implements OnInit {
       }))
     );
 
+    // Initial load
     this.store.dispatch(UsersActions.obtenerColeccion());
+
+    // Debounced search
     this.qInput$.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -192,66 +127,73 @@ export class UsuarioListadoComponent implements OnInit {
     });
   }
 
+  /**
+   * Handle role filter changes.
+   * Resets page (handled by reducer on setFilters) and reloads collection.
+   * @param role Selected role filter ('' | 'Admin' | 'User')
+   */
   onRoleChange(role: '' | Rol) {
     this.store.dispatch(UsersActions.setFilters({ role: role ?? '' }));
     this.store.dispatch(UsersActions.obtenerColeccion());
   }
 
+  /**
+   * Handle search input updates with debounce.
+   * @param q Free-text query string
+   */
   onSearchInput(q: string) {
     this.qInput$.next(q ?? '');
   }
 
+  /**
+   * Force a search emission (uses current debounced pipeline).
+   * Can be enhanced to emit the current text value explicitly.
+   */
   forceSearch() {
     this.qInput$.next('');
   }
 
+  /**
+   * Handle paginator events (Material paginator is 0-based;
+   * store pagination is 1-based).
+   * @param e Page event from MatPaginator
+   */
   onPage(e: PageEvent) {
     this.store.dispatch(UsersActions.setPage({ page: e.pageIndex + 1 }));
     this.store.dispatch(UsersActions.obtenerColeccion());
   }
 
+  /**
+   * Open dialog for creating a new user.
+   * The dialog itself dispatches actions via the embedded form component.
+   */
   onCreate() {
-    const ref = this.dialog.open(UsuarioFormDialog, { width: '520px', data: null });
-    ref.afterClosed().subscribe(() => {
-    });
+    this.dialog.open(UsuarioFormDialogComponent, { width: '520px', data: null });
   }
 
+  /**
+   * Trigger logout across the AuthStore and navigate to /login.
+   */
   onLogout() {
     this.authStore.dispatch(authLogout());
     this.router.navigate(['/login']);
   }
 
+  /**
+   * Open dialog for editing an existing user.
+   * @param user Selected user to edit
+   */
   onEdit(user: User) {
-    const ref = this.dialog.open(UsuarioFormDialog, { width: '520px', data: user });
-    ref.afterClosed().subscribe(() => {
-    });
+    this.dialog.open(UsuarioFormDialogComponent, { width: '520px', data: user });
   }
 
+  /**
+   * Ask for confirmation (browser confirm for now) and dispatch delete.
+   * Can be replaced with a Material confirm dialog in the future.
+   * @param user Selected user to delete
+   */
   onRemove(user: User) {
     if (!confirm(`¿Eliminar usuario #${user.id} (${user.nombre} ${user.apellido})?`)) return;
     this.store.dispatch(UsersActions.eliminar({ id: user.id }));
   }
-}
-
-@Component({
-  selector: 'app-usuario-form-dialog',
-  standalone: true,
-  imports: [MatDialogModule, MatButtonModule, UsuarioFormularioComponent],
-  template: `
-    <h2 mat-dialog-title>{{ data ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
-    <div mat-dialog-content>
-      <app-usuario-formulario [user]="data" (saved)="close()"></app-usuario-formulario>
-    </div>
-    <div mat-dialog-actions align="end">
-      <button mat-button (click)="close()">Cerrar</button>
-    </div>
-  `,
-})
-export class UsuarioFormDialog {
-  constructor(
-    private dialogRef: MatDialogRef<UsuarioFormDialog>,
-    @Inject(MAT_DIALOG_DATA) public data: User | null,
-  ) { }
-
-  close() { this.dialogRef.close(); }
 }

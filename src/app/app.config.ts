@@ -6,6 +6,13 @@ import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 
+/**
+* Configuration for the Angular application.
+*
+* @author  Leon. M. Saia
+* @since   2025-08-14
+*/
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),

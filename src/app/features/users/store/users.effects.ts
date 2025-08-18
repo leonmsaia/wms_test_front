@@ -7,6 +7,8 @@ import { mapResponse } from 'mini-rx-store';
 import { mergeMap, withLatestFrom } from 'rxjs/operators';
 import { Store } from 'mini-rx-store';
 import { UsersState } from './users.reducer';
+import { NotifyService } from '../../../shared/services/notify.service';
+import { tap } from 'rxjs/operators';
 
 /**
  * Users effects: side-effects wrapper for API calls.
@@ -20,11 +22,13 @@ import { UsersState } from './users.reducer';
  * @author  Leon. M. Saia
  * @since   2025-08-14
  */
+
 @Injectable()
 export class UsersEffects {
   private actions$ = inject(Actions);
   private api = inject(UsersApi);
   private store = inject<Store>(Store as any);
+  private notify = inject(NotifyService);
 
   load$ = createEffect(
     this.actions$.pipe(
@@ -49,42 +53,49 @@ export class UsersEffects {
   create$ = createEffect(
     this.actions$.pipe(
       ofType(UsersActionTypes.crear),
-      mergeMap((action: any) =>
-        this.api.create(action.payload).pipe(
-          mapResponse(
-            () => UsersActions.obtenerColeccion(), // reload
-            (err) => UsersActions.crearFail(err)
-          )
+      mergeMap((action: any) => this.api.create(action.payload).pipe(
+        tap(() => this.notify.success('Usuario creado')),
+        mapResponse(
+          () => UsersActions.obtenerColeccion(),
+          (err) => {
+            this.notify.error('No se pudo crear el usuario');
+            return UsersActions.crearFail(err);
+          }
         )
-      )
+      ))
     )
   );
 
   update$ = createEffect(
     this.actions$.pipe(
       ofType(UsersActionTypes.modificar),
-      mergeMap((action: any) =>
-        this.api.update(action.payload.id, action.payload.changes).pipe(
-          mapResponse(
-            () => UsersActions.obtenerColeccion(),
-            (err) => UsersActions.modificarFail(err)
-          )
+      mergeMap((action: any) => this.api.update(action.payload.id, action.payload.changes).pipe(
+        tap(() => this.notify.success('Usuario actualizado')),
+        mapResponse(
+          () => UsersActions.obtenerColeccion(),
+          (err) => {
+            this.notify.error('No se pudo actualizar el usuario');
+            return UsersActions.modificarFail(err);
+          }
         )
-      )
+      ))
     )
   );
 
   delete$ = createEffect(
     this.actions$.pipe(
       ofType(UsersActionTypes.eliminar),
-      mergeMap((action: any) =>
-        this.api.delete(action.payload.id).pipe(
-          mapResponse(
-            () => UsersActions.obtenerColeccion(),
-            (err) => UsersActions.eliminarFail(err)
-          )
+      mergeMap((action: any) => this.api.delete(action.payload.id).pipe(
+        tap(() => this.notify.success('Usuario eliminado')),
+        mapResponse(
+          () => UsersActions.obtenerColeccion(),
+          (err) => {
+            this.notify.error('No se pudo eliminar el usuario');
+            return UsersActions.eliminarFail(err);
+          }
         )
-      )
+      ))
     )
   );
+
 }
