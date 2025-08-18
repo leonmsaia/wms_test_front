@@ -1,58 +1,65 @@
 // src/app/features/auth/login.component.ts
-import { Component, inject } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { AuthApiService } from '../../core/services/auth-api.service';
-import { TokenService } from '../../core/services/token.service';
-import { Router, RouterLink } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AuthStore, authLogin } from './store/auth.store';
+import { Router } from '@angular/router';
+import { LoginRequest } from '../../core/models/auth.model';
 
-/**
- * Login form using reactive forms and Sanctum-based auth.
- *
- * @author  Leon. M. Saia
- * @since   2025-08-14
- */
 @Component({
-  selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  selector: 'app-login',
+  imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <h1>Login</h1>
-    <form [formGroup]="form" (ngSubmit)="onSubmit()">
-      <input placeholder="Email" formControlName="email" type="email" />
-      <input placeholder="Password" formControlName="password" type="password" />
-      <button type="submit" [disabled]="form.invalid || loading">Login</button>
-      <p *ngIf="error" style="color:red">{{ error }}</p>
-    </form>
+    <div class="login-card">
+      <h1>Login</h1>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <label>Email</label>
+        <input type="email" formControlName="email" placeholder="email@example.com" />
+
+        <label>Password</label>
+        <input type="password" formControlName="password" placeholder="********" />
+
+        <button type="submit" [disabled]="form.invalid || busy()">Sign in</button>
+      </form>
+
+      <p class="error" *ngIf="error()">{{ error() }}</p>
+    </div>
   `,
+  styles: [`
+    .login-card { max-width:360px; margin:40px auto; display:flex; flex-direction:column; gap:12px; }
+    form { display:flex; flex-direction:column; gap:8px; }
+    .error { color: #c0392b; }
+  `]
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
-  private auth = inject(AuthApiService);
-  private token = inject(TokenService);
+  private store = inject(AuthStore);
   private router = inject(Router);
 
-  loading = false;
-  error = '';
-
-  form = this.fb.group({
+  form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
   });
 
+  busy  = signal(false);
+  error = signal<string | null>(null);
+
   onSubmit() {
-    if (this.form.invalid || this.loading) return;
-    this.loading = true;
-    this.error = '';
-    this.auth.login(this.form.value as any).subscribe({
-      next: (res) => {
-        this.token.set(res.access_token);
-        this.router.navigateByUrl('/usuarios');
-      },
-      error: (e) => {
-        this.error = e?.error?.message ?? 'Login failed';
-        this.loading = false;
-      },
-      complete: () => (this.loading = false),
-    });
+    if (this.form.invalid) return;
+    this.busy.set(true);
+    this.error.set(null);
+
+    const payload: LoginRequest = this.form.getRawValue();
+
+    this.store.dispatch(authLogin(payload));
+
+    setTimeout(() => {
+      const s = this.store.state();
+      this.busy.set(false);
+      if (s.user && s.token) this.router.navigate(['/']);
+      else if (s.error) this.error.set(s.error);
+    }, 400);
   }
 }

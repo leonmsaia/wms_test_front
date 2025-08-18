@@ -1,17 +1,19 @@
 // src/app/app.routes.ts
 import { Routes } from '@angular/router';
-import { LoginComponent } from './features/auth/login.component';
-import { authGuard } from './core/guards/auth.guard';
+import { LoginComponent } from '@app/features/auth/login.component';
+import { authGuard } from '@app/core/guards/auth.guard';
+
+import { UsuarioListadoComponent } from '@app/features/users/ui/usuario-listado/usuario-listado.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   {
-    path: 'usuarios',
+    path: '',
     canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/users/ui/usuario-listado/usuario-listado.component')
-        .then(m => m.UsuarioListadoComponent),
+    children: [
+      { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
+      { path: 'usuarios', component: UsuarioListadoComponent },
+    ]
   },
-  { path: '', pathMatch: 'full', redirectTo: 'login' },
-  { path: '**', redirectTo: 'login' },
+  { path: '**', redirectTo: '' }
 ];
